@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <annotationProcessing>
+      <profile name="Maven default annotation processors profile" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <module name="api-gateway" />
+        <module name="accounts-service" />
+        <module name="common" />
+        <module name="pix-service" />
+        <module name="transfers-service" />
+        <module name="boletos-service" />
+      </profile>
+    </annotationProcessing>
+  </component>
+</project>
