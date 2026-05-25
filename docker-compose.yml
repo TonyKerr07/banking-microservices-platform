@@ -1,0 +1,168 @@
+version: '3.8'
+
+# ================================================================
+# Banking Microservices Platform — Docker Compose (Dev Environment)
+# ================================================================
+# Requisitos: Docker 24+ e Docker Compose v2
+# Uso: docker-compose up --build
+# ================================================================
+
+services:
+
+  # ─── PostgreSQL (único container, múltiplos databases) ───────
+  postgres:
+    image: postgres:16-alpine
+    container_name: banking-postgres
+    environment:
+      POSTGRES_USER: banking_user
+      POSTGRES_PASSWORD: banking_pass
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U banking_user -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - banking-net
+
+  # ─── Adminer (client web para o PostgreSQL — muito útil) ─────
+  adminer:
+    image: adminer:latest
+    container_name: banking-adminer
+    ports:
+      - "9090:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - banking-net
+
+  # ─── Accounts Service ─────────────────────────────────────────
+  accounts-service:
+    build:
+      context: ./accounts-service
+      dockerfile: Dockerfile
+    container_name: banking-accounts-service
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/accounts_db
+      SPRING_DATASOURCE_USERNAME: banking_user
+      SPRING_DATASOURCE_PASSWORD: banking_pass
+      SPRING_FLYWAY_URL: jdbc:postgresql://postgres:5432/accounts_db
+      SERVER_PORT: 8081
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: on-failure
+    networks:
+      - banking-net
+
+  # ─── Transfers Service ────────────────────────────────────────
+  transfers-service:
+    build:
+      context: ./transfers-service
+      dockerfile: Dockerfile
+    container_name: banking-transfers-service
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/transfers_db
+      SPRING_DATASOURCE_USERNAME: banking_user
+      SPRING_DATASOURCE_PASSWORD: banking_pass
+      SERVER_PORT: 8082
+      # URL do accounts-service para validação de contas
+      BANKING_ACCOUNTS_SERVICE_URL: http://accounts-service:8081
+    depends_on:
+      postgres:
+        condition: service_healthy
+      accounts-service:
+        condition: service_healthy
+    restart: on-failure
+    networks:
+      - banking-net
+
+  # ─── Boletos Service ──────────────────────────────────────────
+  boletos-service:
+    build:
+      context: ./boletos-service
+      dockerfile: Dockerfile
+    container_name: banking-boletos-service
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/boletos_db
+      SPRING_DATASOURCE_USERNAME: banking_user
+      SPRING_DATASOURCE_PASSWORD: banking_pass
+      SERVER_PORT: 8083
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: on-failure
+    networks:
+      - banking-net
+
+  # ─── PIX Service ──────────────────────────────────────────────
+  pix-service:
+    build:
+      context: ./pix-service
+      dockerfile: Dockerfile
+    container_name: banking-pix-service
+    ports:
+      - "8084:8084"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/pix_db
+      SPRING_DATASOURCE_USERNAME: banking_user
+      SPRING_DATASOURCE_PASSWORD: banking_pass
+      SERVER_PORT: 8084
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: on-failure
+    networks:
+      - banking-net
+
+  # ─── API Gateway ──────────────────────────────────────────────
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: banking-api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      BANKING_ACCOUNTS_SERVICE_URL: http://accounts-service:8081
+      BANKING_TRANSFERS_SERVICE_URL: http://transfers-service:8082
+      BANKING_BOLETOS_SERVICE_URL: http://boletos-service:8083
+      BANKING_PIX_SERVICE_URL: http://pix-service:8084
+    depends_on:
+      accounts-service:
+        condition: service_healthy
+    restart: on-failure
+    networks:
+      - banking-net
+
+volumes:
+  postgres-data:
+    driver: local
+
+networks:
+  banking-net:
+    driver: bridge

@@ -1,24 +1,43 @@
-# Compiled class file
+# ===== Build outputs — NEVER commit =====
+target/
+**/target/
 *.class
-
-# Log file
-*.log
-
-# BlueJ files
-*.ctxt
-
-# Mobile Tools for Java (J2ME)
-.mtj.tmp/
-
-# Package Files #
 *.jar
 *.war
-*.nar
-*.ear
-*.zip
-*.tar.gz
-*.rar
 
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
-hs_err_pid*
-replay_pid*
+# ===== OpenAPI Generated Sources — NEVER commit =====
+**/target/generated-sources/openapi/
+
+# ===== IntelliJ IDEA =====
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+.idea_modules/
+
+# ===== Maven =====
+.mvn/wrapper/maven-wrapper.jar
+!.mvn/wrapper/maven-wrapper.properties
+
+# ===== OS =====
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# ===== Logs =====
+*.log
+logs/
+spring.log
+
+# ===== Environment / Secrets — CRITICAL =====
+.env
+.env.*
+!.env.example
+
+# ===== Docker =====
+docker-compose.override.yml
+
+# ===== Spring Boot DevTools =====
+HELP.md

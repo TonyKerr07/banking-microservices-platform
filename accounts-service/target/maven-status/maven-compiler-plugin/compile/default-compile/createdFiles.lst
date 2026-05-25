@@ -1,1 +1,15 @@
 br\com\antonio\banking\accounts\AccountsApplication.class
+br\com\antonio\banking\accounts\domain\enums\AccountType.class
+br\com\antonio\banking\accounts\dto\response\BalanceResponse.class
+br\com\antonio\banking\accounts\mapper\AccountMapper.class
+br\com\antonio\banking\accounts\service\AccountService.class
+br\com\antonio\banking\accounts\dto\request\CreateAccountRequest.class
+br\com\antonio\banking\accounts\dto\request\UpdateAccountStatusRequest.class
+br\com\antonio\banking\accounts\controller\AccountController.class
+br\com\antonio\banking\accounts\domain\entity\Account.class
+br\com\antonio\banking\accounts\exception\AccountNotFoundException.class
+br\com\antonio\banking\accounts\service\impl\AccountServiceImpl.class
+br\com\antonio\banking\accounts\config\OpenApiConfig.class
+br\com\antonio\banking\accounts\domain\enums\AccountStatus.class
+br\com\antonio\banking\accounts\repository\AccountRepository.class
+br\com\antonio\banking\accounts\dto\response\AccountResponse.class
