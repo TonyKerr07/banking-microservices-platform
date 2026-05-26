@@ -2,6 +2,7 @@ package br.com.antonio.banking.pix.service;
 
 import br.com.antonio.banking.common.exception.ConflictException;
 import br.com.antonio.banking.common.exception.UnprocessableException;
+import br.com.antonio.banking.pix.client.AccountsClient;
 import br.com.antonio.banking.pix.domain.entity.PixKey;
 import br.com.antonio.banking.pix.domain.entity.PixTransaction;
 import br.com.antonio.banking.pix.domain.enums.PixKeyStatus;
@@ -47,6 +48,9 @@ class PixServiceImplTest {
 
     @Mock
     private PixMapper pixMapper;
+
+    @Mock
+    private AccountsClient accountsClient;
 
     @InjectMocks
     private PixServiceImpl pixService;
@@ -195,9 +199,12 @@ class PixServiceImplTest {
     class SendPix {
 
         @Test
-        @DisplayName("should send PIX successfully")
+        @DisplayName("should send PIX successfully when source account is active")
         void shouldSendPixSuccessfully() {
             UUID senderAccountId = UUID.randomUUID();
+            var activeSourceAccount = new br.com.antonio.banking.pix.client.dto.AccountInfo(
+                    senderAccountId, "ACTIVE", BigDecimal.valueOf(500)
+            );
             var request = new SendPixRequest(
                     senderAccountId, "joao@email.com", BigDecimal.valueOf(100), "Pagamento"
             );
@@ -219,6 +226,8 @@ class PixServiceImplTest {
                     PixTransactionStatus.COMPLETED, tx.getEndToEndId(), Instant.now()
             );
 
+            when(accountsClient.findById(senderAccountId))
+                    .thenReturn(Optional.of(activeSourceAccount));
             when(pixKeyRepository.existsByKeyValueAndStatus("joao@email.com", PixKeyStatus.ACTIVE))
                     .thenReturn(true);
             when(pixKeyRepository.findByKeyValueAndStatus("joao@email.com", PixKeyStatus.ACTIVE))
@@ -234,12 +243,36 @@ class PixServiceImplTest {
         }
 
         @Test
+        @DisplayName("should throw UnprocessableException when source account is blocked")
+        void shouldThrowWhenSourceAccountNotActive() {
+            UUID senderAccountId = UUID.randomUUID();
+            var blockedAccount = new br.com.antonio.banking.pix.client.dto.AccountInfo(
+                    senderAccountId, "BLOCKED", BigDecimal.valueOf(500)
+            );
+            var request = new SendPixRequest(
+                    senderAccountId, "joao@email.com", BigDecimal.valueOf(100), "Teste"
+            );
+
+            when(accountsClient.findById(senderAccountId))
+                    .thenReturn(Optional.of(blockedAccount));
+
+            assertThatThrownBy(() -> pixService.sendPix(request))
+                    .isInstanceOf(UnprocessableException.class)
+                    .hasMessageContaining("not active");
+        }
+
+        @Test
         @DisplayName("should throw UnprocessableException when sending PIX to yourself")
         void shouldThrowWhenSendingToYourself() {
+            var activeSourceAccount = new br.com.antonio.banking.pix.client.dto.AccountInfo(
+                    accountId, "ACTIVE", BigDecimal.valueOf(500)
+            );
             var request = new SendPixRequest(
                     accountId, "joao@email.com", BigDecimal.valueOf(100), "Teste"
             );
 
+            when(accountsClient.findById(accountId))
+                    .thenReturn(Optional.of(activeSourceAccount));
             when(pixKeyRepository.existsByKeyValueAndStatus("joao@email.com", PixKeyStatus.ACTIVE))
                     .thenReturn(true);
             when(pixKeyRepository.findByKeyValueAndStatus("joao@email.com", PixKeyStatus.ACTIVE))

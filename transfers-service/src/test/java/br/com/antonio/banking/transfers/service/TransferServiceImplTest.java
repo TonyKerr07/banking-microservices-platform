@@ -1,6 +1,9 @@
 package br.com.antonio.banking.transfers.service;
 
+import br.com.antonio.banking.common.exception.ResourceNotFoundException;
 import br.com.antonio.banking.common.exception.UnprocessableException;
+import br.com.antonio.banking.transfers.client.AccountsClient;
+import br.com.antonio.banking.transfers.client.dto.AccountInfo;
 import br.com.antonio.banking.transfers.domain.entity.Transfer;
 import br.com.antonio.banking.transfers.domain.enums.TransferStatus;
 import br.com.antonio.banking.transfers.domain.enums.TransferType;
@@ -32,11 +35,9 @@ import static org.mockito.Mockito.*;
 @DisplayName("TransferServiceImpl")
 class TransferServiceImplTest {
 
-    @Mock
-    private TransferRepository transferRepository;
-
-    @Mock
-    private TransferMapper transferMapper;
+    @Mock private TransferRepository transferRepository;
+    @Mock private TransferMapper transferMapper;
+    @Mock private AccountsClient accountsClient;
 
     @InjectMocks
     private TransferServiceImpl transferService;
@@ -45,11 +46,16 @@ class TransferServiceImplTest {
     private UUID targetId;
     private Transfer transfer;
     private TransferResponse transferResponse;
+    private AccountInfo activeSource;
+    private AccountInfo activeTarget;
 
     @BeforeEach
     void setUp() {
         sourceId = UUID.randomUUID();
         targetId = UUID.randomUUID();
+
+        activeSource = new AccountInfo(sourceId, "ACTIVE", BigDecimal.valueOf(2000));
+        activeTarget = new AccountInfo(targetId, "ACTIVE", BigDecimal.ZERO);
 
         transfer = Transfer.builder()
                 .id(UUID.randomUUID())
@@ -75,12 +81,14 @@ class TransferServiceImplTest {
     class Create {
 
         @Test
-        @DisplayName("should create transfer successfully")
+        @DisplayName("should create transfer successfully when both accounts are active")
         void shouldCreateTransferSuccessfully() {
             var request = new CreateTransferRequest(
                     sourceId, targetId, BigDecimal.valueOf(500), "Teste", TransferType.INTERNAL
             );
 
+            when(accountsClient.findById(sourceId)).thenReturn(Optional.of(activeSource));
+            when(accountsClient.findById(targetId)).thenReturn(Optional.of(activeTarget));
             when(transferRepository.save(any(Transfer.class))).thenReturn(transfer);
             when(transferMapper.toResponse(transfer)).thenReturn(transferResponse);
 
@@ -88,8 +96,9 @@ class TransferServiceImplTest {
 
             assertThat(result).isNotNull();
             assertThat(result.sourceAccountId()).isEqualTo(sourceId);
-            assertThat(result.targetAccountId()).isEqualTo(targetId);
             assertThat(result.amount()).isEqualByComparingTo(BigDecimal.valueOf(500));
+            verify(accountsClient).findById(sourceId);
+            verify(accountsClient).findById(targetId);
             verify(transferRepository).save(any(Transfer.class));
         }
 
@@ -103,6 +112,57 @@ class TransferServiceImplTest {
             assertThatThrownBy(() -> transferService.create(request))
                     .isInstanceOf(UnprocessableException.class)
                     .hasMessageContaining("different");
+
+            verify(accountsClient, never()).findById(any());
+            verify(transferRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("should throw ResourceNotFoundException when source account does not exist")
+        void shouldThrowWhenSourceAccountNotFound() {
+            var request = new CreateTransferRequest(
+                    sourceId, targetId, BigDecimal.valueOf(100), "Teste", TransferType.INTERNAL
+            );
+
+            when(accountsClient.findById(sourceId)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> transferService.create(request))
+                    .isInstanceOf(ResourceNotFoundException.class);
+
+            verify(transferRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("should throw UnprocessableException when source account is blocked")
+        void shouldThrowWhenSourceAccountNotActive() {
+            var request = new CreateTransferRequest(
+                    sourceId, targetId, BigDecimal.valueOf(100), "Teste", TransferType.INTERNAL
+            );
+            var blockedSource = new AccountInfo(sourceId, "BLOCKED", BigDecimal.valueOf(1000));
+
+            when(accountsClient.findById(sourceId)).thenReturn(Optional.of(blockedSource));
+
+            assertThatThrownBy(() -> transferService.create(request))
+                    .isInstanceOf(UnprocessableException.class)
+                    .hasMessageContaining("Source account is not active");
+
+            verify(transferRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("should throw UnprocessableException when target account is closed")
+        void shouldThrowWhenTargetAccountNotActive() {
+            var request = new CreateTransferRequest(
+                    sourceId, targetId, BigDecimal.valueOf(100), "Teste", TransferType.INTERNAL
+            );
+            var closedTarget = new AccountInfo(targetId, "CLOSED", BigDecimal.ZERO);
+
+            when(accountsClient.findById(sourceId)).thenReturn(Optional.of(activeSource));
+            when(accountsClient.findById(targetId)).thenReturn(Optional.of(closedTarget));
+
+            assertThatThrownBy(() -> transferService.create(request))
+                    .isInstanceOf(UnprocessableException.class)
+                    .hasMessageContaining("Target account is not active");
 
             verify(transferRepository, never()).save(any());
         }

@@ -5,5 +5,6 @@ C:\Users\Antonio\projects\banking-microservices-platform\common\src\main\java\br
 C:\Users\Antonio\projects\banking-microservices-platform\common\src\main\java\br\com\antonio\banking\common\exception\ConflictException.java
 C:\Users\Antonio\projects\banking-microservices-platform\common\src\main\java\br\com\antonio\banking\common\exception\GlobalExceptionHandler.java
 C:\Users\Antonio\projects\banking-microservices-platform\common\src\main\java\br\com\antonio\banking\common\exception\ResourceNotFoundException.java
+C:\Users\Antonio\projects\banking-microservices-platform\common\src\main\java\br\com\antonio\banking\common\exception\ServiceUnavailableException.java
 C:\Users\Antonio\projects\banking-microservices-platform\common\src\main\java\br\com\antonio\banking\common\exception\UnprocessableException.java
 C:\Users\Antonio\projects\banking-microservices-platform\common\src\main\java\br\com\antonio\banking\common\util\DocumentUtils.java
