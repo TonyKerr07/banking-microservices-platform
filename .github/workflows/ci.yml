@@ -1,0 +1,107 @@
+name: CI — Build, Codegen & Test
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  JAVA_VERSION: '21'
+  JAVA_DISTRIBUTION: 'temurin'
+
+jobs:
+  # ──────────────────────────────────────────────────────────────
+  # Job 1: Build principal (codegen incluso no generate-sources)
+  # ──────────────────────────────────────────────────────────────
+  build-and-test:
+    name: 🔧 Build, Codegen & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: ⬇️ Checkout
+        uses: actions/checkout@v4
+
+      - name: ☕ Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          cache: maven
+
+      # mvn clean install executa na ordem:
+      # 1. generate-sources (openapi-generator gera as interfaces)
+      # 2. compile
+      # 3. test (H2 em memória — sem Postgres necessário)
+      # 4. package
+      - name: 🏗️ Build completo (codegen + testes)
+        run: mvn -B clean install --no-transfer-progress
+
+      - name: 📊 Upload — Relatórios de Teste (Surefire)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-${{ github.run_number }}
+          path: '**/target/surefire-reports/*.xml'
+          retention-days: 14
+
+  # ──────────────────────────────────────────────────────────────
+  # Job 2: Verificação de contrato OpenAPI (somente em PRs)
+  # Garante que nenhum YAML quebrou e o codegen funciona isolado
+  # ──────────────────────────────────────────────────────────────
+  contract-validation:
+    name: 📋 Validação de Contratos OpenAPI
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: ⬇️ Checkout
+        uses: actions/checkout@v4
+
+      - name: ☕ Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          cache: maven
+
+      # Gera apenas os fontes (sem compilar o projeto todo)
+      # Falha se algum YAML estiver inválido
+      - name: 🔍 Gera código a partir dos contratos
+        run: |
+          mvn -B -pl accounts-service  -am generate-sources --no-transfer-progress
+          mvn -B -pl transfers-service -am generate-sources --no-transfer-progress
+          mvn -B -pl boletos-service   -am generate-sources --no-transfer-progress
+          mvn -B -pl pix-service       -am generate-sources --no-transfer-progress
+
+  # ──────────────────────────────────────────────────────────────
+  # Job 3: Docker build (valida que as imagens constroem ok)
+  # ──────────────────────────────────────────────────────────────
+  docker-build:
+    name: 🐳 Docker Build Validation
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+
+    steps:
+      - name: ⬇️ Checkout
+        uses: actions/checkout@v4
+
+      - name: ☕ Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          cache: maven
+
+      - name: 🏗️ Package (sem testes — já rodou no job anterior)
+        run: mvn -B clean package -DskipTests --no-transfer-progress
+
+      - name: 🐳 Build Docker images
+        run: |
+          docker build -t banking/accounts-service:ci   ./accounts-service
+          docker build -t banking/transfers-service:ci  ./transfers-service
+          docker build -t banking/boletos-service:ci    ./boletos-service
+          docker build -t banking/pix-service:ci        ./pix-service
+          docker build -t banking/api-gateway:ci        ./api-gateway

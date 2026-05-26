@@ -1,1 +1,5 @@
-org\example\AppTest.class
+br\com\antonio\banking\accounts\AccountsApplicationTest.class
+br\com\antonio\banking\accounts\service\AccountServiceImplTest$UpdateStatus.class
+br\com\antonio\banking\accounts\service\AccountServiceImplTest$FindById.class
+br\com\antonio\banking\accounts\service\AccountServiceImplTest.class
+br\com\antonio\banking\accounts\service\AccountServiceImplTest$CreateAccount.class
