@@ -23,21 +23,41 @@ spring:
           uri: ${BANKING_ACCOUNTS_SERVICE_URL:http://localhost:8081}
           predicates:
             - Path=/api/v1/accounts/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: accounts-cb
+                fallbackUri: forward:/fallback/accounts
 
         - id: transfers-service
           uri: ${BANKING_TRANSFERS_SERVICE_URL:http://localhost:8082}
           predicates:
             - Path=/api/v1/transfers/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: transfers-cb
+                fallbackUri: forward:/fallback/transfers
 
         - id: boletos-service
           uri: ${BANKING_BOLETOS_SERVICE_URL:http://localhost:8083}
           predicates:
             - Path=/api/v1/boletos/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: boletos-cb
+                fallbackUri: forward:/fallback/boletos
 
         - id: pix-service
           uri: ${BANKING_PIX_SERVICE_URL:http://localhost:8084}
           predicates:
             - Path=/api/v1/pix/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: pix-cb
+                fallbackUri: forward:/fallback/pix
 
       httpclient:
         connect-timeout: 5000
@@ -86,6 +106,42 @@ springdoc:
         url: ${BANKING_BOLETOS_SERVICE_URL:http://localhost:8083}/v3/api-docs
       - name: PIX Service
         url: ${BANKING_PIX_SERVICE_URL:http://localhost:8084}/v3/api-docs
+
+# ── Resilience4j Circuit Breaker ─────────────────────────
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 10s
+        failureRateThreshold: 50
+        eventConsumerBufferSize: 10
+    instances:
+      accounts-cb:
+        baseConfig: default
+      transfers-cb:
+        baseConfig: default
+      boletos-cb:
+        baseConfig: default
+      pix-cb:
+        baseConfig: default
+  timelimiter:
+    configs:
+      default:
+        timeoutDuration: 5s
+    instances:
+      accounts-cb:
+        baseConfig: default
+      transfers-cb:
+        baseConfig: default
+      boletos-cb:
+        baseConfig: default
+      pix-cb:
+        baseConfig: default
 
 logging:
   level:
