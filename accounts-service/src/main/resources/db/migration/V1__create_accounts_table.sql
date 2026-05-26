@@ -3,7 +3,7 @@
 -- ================================================================
 
 CREATE TABLE IF NOT EXISTS accounts (
-                                        id              UUID            NOT NULL DEFAULT gen_random_uuid(),
+    id              UUID            NOT NULL DEFAULT gen_random_uuid(),
     holder_name     VARCHAR(150)    NOT NULL,
     document_number VARCHAR(14)     NOT NULL,
     account_number  VARCHAR(20)     NOT NULL,
@@ -11,8 +11,8 @@ CREATE TABLE IF NOT EXISTS accounts (
     status          VARCHAR(20)     NOT NULL DEFAULT 'ACTIVE',
     balance         NUMERIC(19, 2)  NOT NULL DEFAULT 0.00,
     version         BIGINT          NOT NULL DEFAULT 0,
-    created_at      TIMESTAMPTZ     NOT NULL DEFAULT NOW(),
-    updated_at      TIMESTAMPTZ     NOT NULL DEFAULT NOW(),
+    created_at      TIMESTAMP       NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMP       NOT NULL DEFAULT NOW(),
 
     CONSTRAINT pk_accounts PRIMARY KEY (id),
     CONSTRAINT uq_accounts_account_number UNIQUE (account_number),

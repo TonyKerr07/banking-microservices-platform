@@ -8,8 +8,8 @@ CREATE TABLE IF NOT EXISTS pix_keys (
     key_type    VARCHAR(20) NOT NULL,
     key_value   VARCHAR(77) NOT NULL,
     status      VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
-    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    deleted_at  TIMESTAMPTZ,
+    created_at  TIMESTAMP   NOT NULL DEFAULT NOW(),
+    deleted_at  TIMESTAMP,
 
     CONSTRAINT pk_pix_keys PRIMARY KEY (id),
     CONSTRAINT uq_pix_keys_key_value UNIQUE (key_value),
@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS pix_transactions (
     status              VARCHAR(20)     NOT NULL DEFAULT 'PENDING',
     end_to_end_id       VARCHAR(36)     NOT NULL,
     failure_reason      VARCHAR(500),
-    created_at          TIMESTAMPTZ     NOT NULL DEFAULT NOW(),
+    created_at          TIMESTAMP       NOT NULL DEFAULT NOW(),
 
     CONSTRAINT pk_pix_transactions PRIMARY KEY (id),
     CONSTRAINT uq_pix_tx_end_to_end_id UNIQUE (end_to_end_id),

@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS transfers (
     transfer_type       VARCHAR(20)     NOT NULL DEFAULT 'INTERNAL',
     status              VARCHAR(20)     NOT NULL DEFAULT 'PENDING',
     failure_reason      VARCHAR(500),
-    created_at          TIMESTAMPTZ     NOT NULL DEFAULT NOW(),
+    created_at          TIMESTAMP       NOT NULL DEFAULT NOW(),
 
     CONSTRAINT pk_transfers PRIMARY KEY (id),
     CONSTRAINT chk_transfers_amount CHECK (amount > 0),

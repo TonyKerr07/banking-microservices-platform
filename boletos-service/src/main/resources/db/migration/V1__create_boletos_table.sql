@@ -8,8 +8,8 @@ CREATE TABLE IF NOT EXISTS boletos (
     due_date                DATE            NOT NULL,
     description             VARCHAR(200),
     status                  VARCHAR(20)     NOT NULL DEFAULT 'PENDING',
-    paid_at                 TIMESTAMPTZ,
-    created_at              TIMESTAMPTZ     NOT NULL DEFAULT NOW(),
+    paid_at                 TIMESTAMP,
+    created_at              TIMESTAMP       NOT NULL DEFAULT NOW(),
 
     CONSTRAINT pk_boletos PRIMARY KEY (id),
     CONSTRAINT uq_boletos_bar_code UNIQUE (bar_code),
