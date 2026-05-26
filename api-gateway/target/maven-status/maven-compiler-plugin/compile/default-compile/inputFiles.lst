@@ -1,1 +1,7 @@
 C:\Users\Antonio\projects\banking-microservices-platform\api-gateway\src\main\java\br\com\antonio\banking\gateway\ApiGatewayApplication.java
+C:\Users\Antonio\projects\banking-microservices-platform\api-gateway\src\main\java\br\com\antonio\banking\gateway\config\SecurityConfig.java
+C:\Users\Antonio\projects\banking-microservices-platform\api-gateway\src\main\java\br\com\antonio\banking\gateway\controller\AuthController.java
+C:\Users\Antonio\projects\banking-microservices-platform\api-gateway\src\main\java\br\com\antonio\banking\gateway\dto\LoginRequest.java
+C:\Users\Antonio\projects\banking-microservices-platform\api-gateway\src\main\java\br\com\antonio\banking\gateway\dto\TokenResponse.java
+C:\Users\Antonio\projects\banking-microservices-platform\api-gateway\src\main\java\br\com\antonio\banking\gateway\filter\JwtAuthenticationFilter.java
+C:\Users\Antonio\projects\banking-microservices-platform\api-gateway\src\main\java\br\com\antonio\banking\gateway\service\JwtService.java
