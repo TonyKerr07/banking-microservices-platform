@@ -1,0 +1,355 @@
+openapi: 3.0.3
+
+info:
+  title: PIX Service API
+  description: |
+    PIX key registration and instant payment processing.
+    Follows BACEN PIX specification guidelines (simplified for portfolio).
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8084
+    description: Local development
+
+tags:
+  - name: PIX Keys
+    description: PIX key lifecycle management
+  - name: PIX Transactions
+    description: Instant payment operations
+
+paths:
+
+  # ── PIX Keys ──────────────────────────────────────────────────
+
+  /api/v1/pix/keys:
+    post:
+      tags: [ PIX Keys ]
+      operationId: registerPixKey
+      summary: Register a new PIX key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePixKeyRequest'
+      responses:
+        '201':
+          description: PIX key registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PixKeyResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+    get:
+      tags: [ PIX Keys ]
+      operationId: listPixKeys
+      summary: List PIX keys by account
+      parameters:
+        - name: accountId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of PIX keys for the account
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PixKeyResponse'
+
+  /api/v1/pix/keys/{id}:
+    delete:
+      tags: [ PIX Keys ]
+      operationId: deletePixKey
+      summary: Delete (deactivate) a PIX key
+      parameters:
+        - $ref: '#/components/parameters/PixKeyId'
+      responses:
+        '204':
+          description: PIX key deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/v1/pix/keys/lookup:
+    get:
+      tags: [ PIX Keys ]
+      operationId: lookupPixKey
+      summary: Lookup a PIX key (find owner info by key value)
+      parameters:
+        - name: key
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The PIX key value (CPF, email, phone or random key)
+      responses:
+        '200':
+          description: PIX key found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PixKeyResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ── PIX Transactions ──────────────────────────────────────────
+
+  /api/v1/pix/transactions:
+    post:
+      tags: [ PIX Transactions ]
+      operationId: sendPix
+      summary: Send a PIX payment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendPixRequest'
+      responses:
+        '201':
+          description: PIX transaction initiated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PixTransactionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+    get:
+      tags: [ PIX Transactions ]
+      operationId: listTransactions
+      summary: List PIX transactions by account (paginated)
+      parameters:
+        - name: accountId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+      responses:
+        '200':
+          description: Paginated transactions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PixTransactionPageResponse'
+
+  /api/v1/pix/transactions/{id}:
+    get:
+      tags: [ PIX Transactions ]
+      operationId: findTransactionById
+      summary: Find PIX transaction by ID
+      parameters:
+        - $ref: '#/components/parameters/TransactionId'
+      responses:
+        '200':
+          description: Transaction found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PixTransactionResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  parameters:
+    PixKeyId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    TransactionId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    PageParam:
+      name: page
+      in: query
+      schema:
+        type: integer
+        default: 0
+    SizeParam:
+      name: size
+      in: query
+      schema:
+        type: integer
+        default: 20
+
+  schemas:
+    CreatePixKeyRequest:
+      type: object
+      required: [ accountId, keyType, keyValue ]
+      properties:
+        accountId:
+          type: string
+          format: uuid
+        keyType:
+          $ref: '#/components/schemas/PixKeyType'
+        keyValue:
+          type: string
+          maxLength: 77
+          description: |
+            Value depends on type:
+            CPF: 11 digits | CNPJ: 14 digits |
+            EMAIL: valid email | PHONE: +5511999999999 |
+            RANDOM: leave empty (auto-generated)
+          example: "joao@email.com"
+
+    SendPixRequest:
+      type: object
+      required: [ sourceAccountId, targetPixKey, amount ]
+      properties:
+        sourceAccountId:
+          type: string
+          format: uuid
+        targetPixKey:
+          type: string
+          description: PIX key value of the recipient
+          example: "+5511999999999"
+        amount:
+          type: number
+          format: double
+          minimum: 0.01
+          example: 100.00
+        description:
+          type: string
+          maxLength: 140
+          example: "Pagamento serviços"
+
+    PixKeyResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        accountId:
+          type: string
+          format: uuid
+        keyType:
+          $ref: '#/components/schemas/PixKeyType'
+        keyValue:
+          type: string
+        status:
+          $ref: '#/components/schemas/PixKeyStatus'
+        createdAt:
+          type: string
+          format: date-time
+
+    PixTransactionResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        sourceAccountId:
+          type: string
+          format: uuid
+        targetPixKey:
+          type: string
+        targetAccountId:
+          type: string
+          format: uuid
+        amount:
+          type: number
+          format: double
+        description:
+          type: string
+        status:
+          $ref: '#/components/schemas/PixTransactionStatus'
+        endToEndId:
+          type: string
+          description: Unique E2E identifier (BACEN standard)
+        createdAt:
+          type: string
+          format: date-time
+
+    PixTransactionPageResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/PixTransactionResponse'
+        page:
+          type: integer
+        size:
+          type: integer
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+        last:
+          type: boolean
+
+    PixKeyType:
+      type: string
+      enum: [ CPF, CNPJ, EMAIL, PHONE, RANDOM ]
+
+    PixKeyStatus:
+      type: string
+      enum: [ ACTIVE, DELETED ]
+
+    PixTransactionStatus:
+      type: string
+      enum: [ PENDING, COMPLETED, FAILED ]
+
+    ErrorResponse:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        status:
+          type: integer
+        error:
+          type: string
+        message:
+          type: string
+        path:
+          type: string
+
+  responses:
+    BadRequest:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Conflict:
+      description: PIX key already registered
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    UnprocessableEntity:
+      description: Business rule violation
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'

@@ -1,0 +1,100 @@
+spring:
+  application:
+    name: api-gateway
+
+  cloud:
+    gateway:
+      # ── Global CORS ─────────────────────────────────────────
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOriginPatterns:
+              - "http://localhost:[*]"
+              - "https://*.antonio.com.br"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - PATCH
+              - DELETE
+              - OPTIONS
+            allowedHeaders:
+              - "*"
+            allowCredentials: true
+            maxAge: 3600
+
+      # ── Default Filters (applies to all routes) ─────────────
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
+        # SLOT: Rate Limiter com Redis — habilitar na próxima iteração
+        # - name: RequestRateLimiter
+        #   args:
+        #     redis-rate-limiter.replenishRate: 100
+        #     redis-rate-limiter.burstCapacity: 200
+
+      # ── Routes ──────────────────────────────────────────────
+      routes:
+
+        # Accounts Service
+        - id: accounts-service
+          uri: ${BANKING_ACCOUNTS_SERVICE_URL:http://localhost:8081}
+          predicates:
+            - Path=/api/v1/accounts/**
+        # SLOT: CircuitBreaker com Resilience4j — próxima iteração
+
+        # Transfers Service
+        - id: transfers-service
+          uri: ${BANKING_TRANSFERS_SERVICE_URL:http://localhost:8082}
+          predicates:
+            - Path=/api/v1/transfers/**
+
+        # Boletos Service
+        - id: boletos-service
+          uri: ${BANKING_BOLETOS_SERVICE_URL:http://localhost:8083}
+          predicates:
+            - Path=/api/v1/boletos/**
+
+        # PIX Service
+        - id: pix-service
+          uri: ${BANKING_PIX_SERVICE_URL:http://localhost:8084}
+          predicates:
+            - Path=/api/v1/pix/**
+
+      # ── HttpClient tuning ────────────────────────────────────
+      httpclient:
+        connect-timeout: 5000
+        response-timeout: 10s
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,gateway
+  endpoint:
+    health:
+      show-details: always
+    gateway:
+      enabled: true
+
+# ── SpringDoc: agrega os Swagger UIs de todos os serviços ───
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    # Cada serviço aparece como uma opção no dropdown do Swagger UI do Gateway
+    urls:
+      - name: Accounts Service
+        url: ${BANKING_ACCOUNTS_SERVICE_URL:http://localhost:8081}/v3/api-docs
+      - name: Transfers Service
+        url: ${BANKING_TRANSFERS_SERVICE_URL:http://localhost:8082}/v3/api-docs
+      - name: Boletos Service
+        url: ${BANKING_BOLETOS_SERVICE_URL:http://localhost:8083}/v3/api-docs
+      - name: PIX Service
+        url: ${BANKING_PIX_SERVICE_URL:http://localhost:8084}/v3/api-docs
+
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    br.com.antonio.banking: DEBUG

@@ -1,4 +1,8 @@
 package br.com.antonio.banking.boletos.domain.enums;
 
-public class BoletoStatus {
+public enum BoletoStatus {
+    PENDING,
+    PAID,
+    CANCELLED,
+    OVERDUE
 }

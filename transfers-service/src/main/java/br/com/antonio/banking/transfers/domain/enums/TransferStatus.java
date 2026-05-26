@@ -1,4 +1,8 @@
 package br.com.antonio.banking.transfers.domain.enums;
 
-public class TransferStatus {
+public enum TransferStatus {
+    PENDING,
+    COMPLETED,
+    FAILED,
+    REVERSED
 }

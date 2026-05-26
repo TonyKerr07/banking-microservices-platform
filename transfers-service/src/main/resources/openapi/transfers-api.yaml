@@ -1,0 +1,226 @@
+openapi: 3.0.3
+
+info:
+  title: Transfers Service API
+  description: |
+    Handles internal transfers between accounts.
+    Validates account existence via accounts-service before processing.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8082
+    description: Local development
+
+tags:
+  - name: Transfers
+    description: Transfer operations
+
+paths:
+  /api/v1/transfers:
+    post:
+      tags: [ Transfers ]
+      operationId: createTransfer
+      summary: Initiate a transfer between two accounts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTransferRequest'
+      responses:
+        '201':
+          description: Transfer initiated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+    get:
+      tags: [ Transfers ]
+      operationId: listTransfers
+      summary: List transfers (paginated)
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+      responses:
+        '200':
+          description: Paginated list of transfers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferPageResponse'
+
+  /api/v1/transfers/{id}:
+    get:
+      tags: [ Transfers ]
+      operationId: findTransferById
+      summary: Find transfer by ID
+      parameters:
+        - $ref: '#/components/parameters/TransferId'
+      responses:
+        '200':
+          description: Transfer found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/transfers/account/{accountId}:
+    get:
+      tags: [ Transfers ]
+      operationId: listTransfersByAccount
+      summary: List all transfers for a specific account
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+      responses:
+        '200':
+          description: Transfers for the account
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferPageResponse'
+
+components:
+  parameters:
+    TransferId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    PageParam:
+      name: page
+      in: query
+      schema:
+        type: integer
+        default: 0
+    SizeParam:
+      name: size
+      in: query
+      schema:
+        type: integer
+        default: 20
+
+  schemas:
+    CreateTransferRequest:
+      type: object
+      required: [ sourceAccountId, targetAccountId, amount, description ]
+      properties:
+        sourceAccountId:
+          type: string
+          format: uuid
+        targetAccountId:
+          type: string
+          format: uuid
+        amount:
+          type: number
+          format: double
+          minimum: 0.01
+          example: 250.00
+        description:
+          type: string
+          maxLength: 200
+          example: "Pagamento aluguel"
+        transferType:
+          $ref: '#/components/schemas/TransferType'
+
+    TransferResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        sourceAccountId:
+          type: string
+          format: uuid
+        targetAccountId:
+          type: string
+          format: uuid
+        amount:
+          type: number
+          format: double
+        description:
+          type: string
+        transferType:
+          $ref: '#/components/schemas/TransferType'
+        status:
+          $ref: '#/components/schemas/TransferStatus'
+        createdAt:
+          type: string
+          format: date-time
+
+    TransferPageResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/TransferResponse'
+        page:
+          type: integer
+        size:
+          type: integer
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+        last:
+          type: boolean
+
+    TransferType:
+      type: string
+      enum: [ INTERNAL, TED, DOC ]
+
+    TransferStatus:
+      type: string
+      enum: [ PENDING, COMPLETED, FAILED, REVERSED ]
+
+    ErrorResponse:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        status:
+          type: integer
+        error:
+          type: string
+        message:
+          type: string
+        path:
+          type: string
+
+  responses:
+    BadRequest:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    UnprocessableEntity:
+      description: Business rule violation
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'

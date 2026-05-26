@@ -1,4 +1,7 @@
 package br.com.antonio.banking.pix.domain.enums;
 
-public class PixTransactionStatus {
+public enum PixTransactionStatus {
+    PENDING,
+    COMPLETED,
+    FAILED
 }
