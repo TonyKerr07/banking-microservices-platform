@@ -1,4 +1,7 @@
+C:\Users\Antonio\projects\banking-microservices-platform\transfers-service\src\main\java\br\com\antonio\banking\transfers\client\AccountsClient.java
+C:\Users\Antonio\projects\banking-microservices-platform\transfers-service\src\main\java\br\com\antonio\banking\transfers\client\dto\AccountInfo.java
 C:\Users\Antonio\projects\banking-microservices-platform\transfers-service\src\main\java\br\com\antonio\banking\transfers\config\OpenApiConfig.java
+C:\Users\Antonio\projects\banking-microservices-platform\transfers-service\src\main\java\br\com\antonio\banking\transfers\config\RestClientConfig.java
 C:\Users\Antonio\projects\banking-microservices-platform\transfers-service\src\main\java\br\com\antonio\banking\transfers\controller\TransferController.java
 C:\Users\Antonio\projects\banking-microservices-platform\transfers-service\src\main\java\br\com\antonio\banking\transfers\domain\entity\Transfer.java
 C:\Users\Antonio\projects\banking-microservices-platform\transfers-service\src\main\java\br\com\antonio\banking\transfers\domain\enums\TransferStatus.java

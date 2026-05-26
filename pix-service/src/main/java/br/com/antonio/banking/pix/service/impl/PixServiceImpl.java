@@ -4,6 +4,7 @@ import br.com.antonio.banking.common.dto.PageResponse;
 import br.com.antonio.banking.common.exception.ConflictException;
 import br.com.antonio.banking.common.exception.ResourceNotFoundException;
 import br.com.antonio.banking.common.exception.UnprocessableException;
+import br.com.antonio.banking.pix.client.AccountsClient;
 import br.com.antonio.banking.pix.domain.entity.PixKey;
 import br.com.antonio.banking.pix.domain.entity.PixTransaction;
 import br.com.antonio.banking.pix.domain.enums.PixKeyStatus;
@@ -41,6 +42,7 @@ public class PixServiceImpl implements PixService {
     private final PixKeyRepository pixKeyRepository;
     private final PixTransactionRepository pixTransactionRepository;
     private final PixMapper pixMapper;
+    private final AccountsClient accountsClient;
 
     // ── PIX Keys ───────────────────────────────────────────────
 
@@ -115,6 +117,18 @@ public class PixServiceImpl implements PixService {
     @Override
     @Transactional
     public PixTransactionResponse sendPix(SendPixRequest request) {
+        // ── Validate source account ──────────────────────────────
+        br.com.antonio.banking.pix.client.dto.AccountInfo sourceAccount =
+                accountsClient.findById(request.sourceAccountId())
+                        .orElseThrow(() -> new ResourceNotFoundException(
+                                "Account", "id", request.sourceAccountId()));
+
+        if (!sourceAccount.isActive()) {
+            throw new UnprocessableException(
+                    "Source account is not active. Current status: " + sourceAccount.status());
+        }
+
+        // ── Validate target PIX key ──────────────────────────────
         if (!pixKeyRepository.existsByKeyValueAndStatus(
                 request.targetPixKey(), PixKeyStatus.ACTIVE)) {
             throw new ResourceNotFoundException("PixKey", "keyValue", request.targetPixKey());
@@ -128,12 +142,6 @@ public class PixServiceImpl implements PixService {
             throw new UnprocessableException("Cannot send PIX to yourself.");
         }
 
-        /*
-         * NOTE: In a full implementation this would:
-         * 1. Call accounts-service to validate sourceAccount is ACTIVE and has balance
-         * 2. Debit source / credit target via accounts-service (or outbox + Kafka)
-         * 3. Generate a proper BACEN E2EID: E + ISPB + YYYYMMDD + HHmmss + 11 random chars
-         */
         String endToEndId = "E" + UUID.randomUUID().toString().replace("-", "").substring(0, 32);
 
         PixTransaction tx = PixTransaction.builder()

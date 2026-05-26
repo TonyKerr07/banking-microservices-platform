@@ -1,7 +1,10 @@
 package br.com.antonio.banking.transfers.service.impl;
 
 import br.com.antonio.banking.common.dto.PageResponse;
+import br.com.antonio.banking.common.exception.ResourceNotFoundException;
 import br.com.antonio.banking.common.exception.UnprocessableException;
+import br.com.antonio.banking.transfers.client.AccountsClient;
+import br.com.antonio.banking.transfers.client.dto.AccountInfo;
 import br.com.antonio.banking.transfers.domain.entity.Transfer;
 import br.com.antonio.banking.transfers.domain.enums.TransferStatus;
 import br.com.antonio.banking.transfers.dto.request.CreateTransferRequest;
@@ -25,6 +28,7 @@ public class TransferServiceImpl implements TransferService {
 
     private final TransferRepository transferRepository;
     private final TransferMapper transferMapper;
+    private final AccountsClient accountsClient;
 
     @Override
     @Transactional
@@ -33,17 +37,34 @@ public class TransferServiceImpl implements TransferService {
             throw new UnprocessableException("Source and target accounts must be different.");
         }
 
+        // ── Validate source account ──────────────────────────
+        AccountInfo sourceAccount = accountsClient.findById(request.sourceAccountId())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Account", "id", request.sourceAccountId()));
+
+        if (!sourceAccount.isActive()) {
+            throw new UnprocessableException(
+                    "Source account is not active. Current status: " + sourceAccount.status());
+        }
+
+        // ── Validate target account ──────────────────────────
+        AccountInfo targetAccount = accountsClient.findById(request.targetAccountId())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Account", "id", request.targetAccountId()));
+
+        if (!targetAccount.isActive()) {
+            throw new UnprocessableException(
+                    "Target account is not active. Current status: " + targetAccount.status());
+        }
+
         log.info("Creating transfer from {} to {} — amount: {}",
                 request.sourceAccountId(), request.targetAccountId(), request.amount());
 
         /*
-         * NOTE: In a full implementation, this service would:
-         * 1. Call accounts-service via RestClient to validate both accounts are ACTIVE
-         * 2. Call accounts-service to debit source and credit target (or use a saga/outbox pattern)
-         * 3. Persist the transfer with COMPLETED status
-         *
-         * For this skeleton, we persist directly as COMPLETED to keep focus on architecture.
-         * The RestClient integration slot is reserved in the config package.
+         * NOTE: Debit/credit is not implemented here because it requires
+         * a distributed transaction (saga pattern) or an outbox event.
+         * This will be tackled in the Kafka/event-driven iteration.
+         * For now, both accounts are validated and the transfer is persisted.
          */
         Transfer transfer = Transfer.builder()
                 .sourceAccountId(request.sourceAccountId())
@@ -55,7 +76,8 @@ public class TransferServiceImpl implements TransferService {
                 .build();
 
         Transfer saved = transferRepository.save(transfer);
-        log.info("Transfer {} completed successfully", saved.getId());
+        log.info("Transfer {} completed: {} → {}, amount: {}",
+                saved.getId(), request.sourceAccountId(), request.targetAccountId(), request.amount());
         return transferMapper.toResponse(saved);
     }
 
