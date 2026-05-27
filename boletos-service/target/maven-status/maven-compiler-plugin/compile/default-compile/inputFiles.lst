@@ -6,6 +6,7 @@ C:\Users\Antonio\projects\banking-microservices-platform\boletos-service\src\mai
 C:\Users\Antonio\projects\banking-microservices-platform\boletos-service\src\main\java\br\com\antonio\banking\boletos\dto\request\CreateBoletoRequest.java
 C:\Users\Antonio\projects\banking-microservices-platform\boletos-service\src\main\java\br\com\antonio\banking\boletos\dto\response\BoletoResponse.java
 C:\Users\Antonio\projects\banking-microservices-platform\boletos-service\src\main\java\br\com\antonio\banking\boletos\exception\BoletoNotFoundException.java
+C:\Users\Antonio\projects\banking-microservices-platform\boletos-service\src\main\java\br\com\antonio\banking\boletos\job\BoletoOverdueJob.java
 C:\Users\Antonio\projects\banking-microservices-platform\boletos-service\src\main\java\br\com\antonio\banking\boletos\mapper\BoletoMapper.java
 C:\Users\Antonio\projects\banking-microservices-platform\boletos-service\src\main\java\br\com\antonio\banking\boletos\repository\BoletoRepository.java
 C:\Users\Antonio\projects\banking-microservices-platform\boletos-service\src\main\java\br\com\antonio\banking\boletos\service\BoletoService.java

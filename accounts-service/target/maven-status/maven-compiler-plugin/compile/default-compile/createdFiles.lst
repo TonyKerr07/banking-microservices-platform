@@ -23,5 +23,6 @@ br\com\antonio\banking\accounts\mapper\AccountMapperImpl.class
 br\com\antonio\banking\accounts\api\model\AccountResponse.class
 br\com\antonio\banking\accounts\api\model\CreateAccountRequest.class
 br\com\antonio\banking\accounts\api\BalanceApi.class
+br\com\antonio\banking\accounts\config\CacheConfig.class
 br\com\antonio\banking\accounts\config\OpenApiConfig.class
 br\com\antonio\banking\accounts\repository\AccountRepository.class

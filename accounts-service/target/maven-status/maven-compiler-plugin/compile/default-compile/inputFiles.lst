@@ -1,4 +1,5 @@
 C:\Users\Antonio\projects\banking-microservices-platform\accounts-service\src\main\java\br\com\antonio\banking\accounts\AccountsApplication.java
+C:\Users\Antonio\projects\banking-microservices-platform\accounts-service\src\main\java\br\com\antonio\banking\accounts\config\CacheConfig.java
 C:\Users\Antonio\projects\banking-microservices-platform\accounts-service\src\main\java\br\com\antonio\banking\accounts\config\OpenApiConfig.java
 C:\Users\Antonio\projects\banking-microservices-platform\accounts-service\src\main\java\br\com\antonio\banking\accounts\controller\AccountController.java
 C:\Users\Antonio\projects\banking-microservices-platform\accounts-service\src\main\java\br\com\antonio\banking\accounts\domain\entity\Account.java

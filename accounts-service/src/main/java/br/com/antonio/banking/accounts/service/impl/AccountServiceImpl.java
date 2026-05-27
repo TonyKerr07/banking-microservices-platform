@@ -18,6 +18,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
@@ -59,6 +62,7 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
+    @Cacheable(value = "account-data", key = "#id")
     @Transactional(readOnly = true)
     public AccountResponse findById(UUID id) {
         return accountMapper.toResponse(getAccountOrThrow(id));
@@ -71,6 +75,10 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
+    @Caching(evict = {
+            @CacheEvict(value = "account-data",    key = "#id"),
+            @CacheEvict(value = "account-balance", key = "#id")
+    })
     @Transactional
     public AccountResponse updateStatus(UUID id, UpdateAccountStatusRequest request) {
         Account account = getAccountOrThrow(id);
@@ -83,6 +91,7 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
+    @Cacheable(value = "account-balance", key = "#id")
     @Transactional(readOnly = true)
     public BalanceResponse getBalance(UUID id) {
         Account account = getAccountOrThrow(id);

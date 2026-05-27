@@ -1,6 +1,12 @@
 spring:
   application:
     name: accounts-service
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+    cache:
+      type: redis
 
   # ── H2 (dev profile — default) ───────────────────────────────
   datasource:
@@ -41,10 +47,15 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics
+        include: health,info,metrics,prometheus
   endpoint:
     health:
       show-details: always
+    prometheus:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
 
 # ── SpringDoc ─────────────────────────────────────────────────
 springdoc:
